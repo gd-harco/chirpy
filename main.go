@@ -10,7 +10,9 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
+	"github.com/gd-harco/chirpy/internal/auth"
 	"github.com/gd-harco/chirpy/internal/database"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -21,6 +23,22 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+}
+
+type userResponse struct {
+	Id        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
+func newUserResponse(u database.User) userResponse {
+	return userResponse{
+		Id:        u.ID,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+		Email:     u.Email,
+	}
 }
 
 func getReadyStatus(resp http.ResponseWriter, req *http.Request) {
@@ -62,20 +80,59 @@ func (cfg *apiConfig) middlewareMetrics(next http.Handler) http.Handler {
 
 func (cfg *apiConfig) createUser(w http.ResponseWriter, r *http.Request) {
 	type userDesc struct {
-		Email string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	user := userDesc{}
 	err := decoder.Decode(&user)
 	if err != nil {
-		log.Fatal(err)
+		respondWithError(w, 500, err)
+		return
 	}
-	createdUser, err := cfg.db.CreateUser(r.Context(), user.Email)
+	hash, err := auth.HashPassword(user.Password)
 	if err != nil {
-		log.Fatal(err)
+		respondWithError(w, 500, err)
+		return
 	}
-	respondWithJSON(w, http.StatusCreated, createdUser)
+	createdUser, err := cfg.db.CreateUser(r.Context(), database.CreateUserParams{Email: user.Email, HashedPassword: hash})
+	if err != nil {
+		respondWithError(w, 500, err)
+		return
+	}
+	responseUser := newUserResponse(createdUser)
+	respondWithJSON(w, http.StatusCreated, responseUser)
 	return
+}
+
+func (cfg *apiConfig) login(w http.ResponseWriter, r *http.Request) {
+	type userDesc struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	user := userDesc{}
+	err := decoder.Decode(&user)
+	if err != nil {
+		respondWithError(w, 500, err)
+		return
+	}
+	dbUser, err := cfg.db.GetUser(r.Context(), user.Email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, err)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+	valid := auth.CheckPasswordHash(user.Password, dbUser.HashedPassword)
+	if !valid {
+		respondWithError(w, 401, errors.New("Incorrect email or password"))
+		return
+	}
+	responseUser := newUserResponse(dbUser)
+	respondWithJSON(w, 200, responseUser)
 }
 
 func (cfg *apiConfig) createChirps(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +259,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCfg.createUser)
 	mux.HandleFunc("GET /api/chirps", apiCfg.getChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirps)
-
+	mux.HandleFunc("POST /api/login", apiCfg.login)
 	serv := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
