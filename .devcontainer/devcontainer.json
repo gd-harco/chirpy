@@ -1,0 +1,17 @@
+{
+  "name": "boot.dev-devops",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "features": {},
+  "forwardPorts": [5432],
+  "postCreateCommand": "goose --version && sqlc version",
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  },
+  "remoteEnv": {
+    "DATABASE_URL": "postgres://postgres:pass@db:5432/chirpy?sslmode=disable"
+  }
+}
