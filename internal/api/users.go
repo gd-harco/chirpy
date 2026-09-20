@@ -13,20 +13,22 @@ import (
 )
 
 type userResponse struct {
-	Id        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	Id           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 func newUserResponse(u database.User) userResponse {
 	return userResponse{
-		Id:        u.ID,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-		Email:     u.Email,
-		Token:     "",
+		Id:           u.ID,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+		Email:        u.Email,
+		Token:        "",
+		RefreshToken: "",
 	}
 }
 
@@ -54,14 +56,12 @@ func (cfg *Config) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 	responseUser := newUserResponse(createdUser)
 	respondWithJSON(w, http.StatusCreated, responseUser)
-	return
 }
 
 func (cfg *Config) login(w http.ResponseWriter, r *http.Request) {
 	type userDesc struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	user := userDesc{}
@@ -85,14 +85,18 @@ func (cfg *Config) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	responseUser := newUserResponse(dbUser)
-	if user.ExpiresInSeconds == 0 || user.ExpiresInSeconds > 3600 {
-		user.ExpiresInSeconds = 3600
+	jwt, err := auth.MakeJWT(responseUser.Id, cfg.secretKey)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
 	}
-	jwt, err := auth.MakeJWT(responseUser.Id, cfg.secretKey, time.Duration(user.ExpiresInSeconds)*time.Second)
+	refresh := auth.MakeRefreshToken()
+	stored, err := cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{Token: refresh, UserID: responseUser.Id})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
 	responseUser.Token = jwt
+	responseUser.RefreshToken = stored.Token
 	respondWithJSON(w, 200, responseUser)
 }

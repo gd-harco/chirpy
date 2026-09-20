@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"log"
 	"net/http"
@@ -11,10 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 	claims := jwt.RegisteredClaims{
 		Issuer:   "chirpy-access",
-		IssuedAt: jwt.NewNumericDate(time.Now().UTC()), ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn).UTC()),
+		IssuedAt: jwt.NewNumericDate(time.Now().UTC()), ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour).UTC()),
 		Subject: userID.String(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -58,4 +60,10 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", errors.New("Malformed Bearer")
 	}
 	return split[1], nil
+}
+
+func MakeRefreshToken() string {
+	buffer := make([]byte, 32)
+	rand.Read(buffer)
+	return hex.EncodeToString(buffer)
 }

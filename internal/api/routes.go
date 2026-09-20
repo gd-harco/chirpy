@@ -20,5 +20,7 @@ func NewMux(cfg *Config) http.Handler {
 	mux.HandleFunc("POST /api/users", cfg.createUser)
 	mux.HandleFunc("POST /api/login", cfg.login)
 
+	mux.HandleFunc("POST /api/refresh", cfg.refreshJWT)
+	mux.HandleFunc("POST /api/revoke", cfg.revokeRefreshToken)
 	return mux
 }

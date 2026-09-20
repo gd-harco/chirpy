@@ -21,7 +21,6 @@ func respondWithJSON(w http.ResponseWriter, status int, payload any) {
 		w.Write([]byte(`{"error": "Failed to marshal JSON response"}`))
 		return
 	}
-
 	w.WriteHeader(status)
 	w.Write(response)
 }
