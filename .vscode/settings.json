@@ -1,0 +1,6 @@
+{
+  "go.toolsEnvVars": {
+    "GOCACHE": "/home/vscode/.cache/go-build",
+    "GOMODCACHE": "/home/vscode/go/pkg/mod"
+  }
+}

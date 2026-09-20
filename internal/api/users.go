@@ -89,5 +89,10 @@ func (cfg *Config) login(w http.ResponseWriter, r *http.Request) {
 		user.ExpiresInSeconds = 3600
 	}
 	jwt, err := auth.MakeJWT(responseUser.Id, cfg.secretKey, time.Duration(user.ExpiresInSeconds)*time.Second)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+	responseUser.Token = jwt
 	respondWithJSON(w, 200, responseUser)
 }
