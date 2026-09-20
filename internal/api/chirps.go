@@ -15,11 +15,13 @@ import (
 func (cfg *Config) createChirps(w http.ResponseWriter, r *http.Request) {
 	bearer, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err)
+		respondWithError(w, http.StatusUnauthorized, err)
+		return
 	}
 	userUUID, err := auth.ValidateJWT(bearer, cfg.secretKey)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err)
+		respondWithError(w, http.StatusUnauthorized, err)
+		return
 	}
 	decoder := json.NewDecoder(r.Body)
 	requestPayload := database.CreateChirpsParams{}
