@@ -7,31 +7,40 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gd-harco/chirpy/internal/auth"
 	"github.com/gd-harco/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 func (cfg *Config) createChirps(w http.ResponseWriter, r *http.Request) {
-
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err)
+	}
+	userUUID, err := auth.ValidateJWT(bearer, cfg.secretKey)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err)
+	}
 	decoder := json.NewDecoder(r.Body)
 	requestPayload := database.CreateChirpsParams{}
-	err := decoder.Decode(&requestPayload)
+	err = decoder.Decode(&requestPayload)
 	if err != nil {
-		respondWithError(w, 400, err)
+		respondWithError(w, http.StatusBadRequest, err)
 		return
 	}
+	requestPayload.UserID = userUUID
 	toSave, err := validateChirp(requestPayload.Body)
 	if err != nil {
-		respondWithError(w, 400, err)
+		respondWithError(w, http.StatusBadRequest, err)
 		return
 	}
 	requestPayload.Body = toSave
 	createdChirp, err := cfg.db.CreateChirps(r.Context(), requestPayload)
 	if err != nil {
-		respondWithError(w, 500, err)
+		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondWithJSON(w, 201, createdChirp)
+	respondWithJSON(w, http.StatusCreated, createdChirp)
 
 }
 
