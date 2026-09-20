@@ -10,10 +10,6 @@ import (
 )
 
 func (cfg *Config) refreshJWT(w http.ResponseWriter, r *http.Request) {
-	if r.Body != nil {
-		respondWithError(w, http.StatusBadRequest, errors.New("unexpected body in request"))
-		return
-	}
 	bearer, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err)
@@ -57,10 +53,6 @@ func (cfg *Config) refreshJWT(w http.ResponseWriter, r *http.Request) {
 */
 
 func (cfg *Config) revokeRefreshToken(w http.ResponseWriter, r *http.Request) {
-	if r.Body != nil {
-		respondWithError(w, http.StatusBadRequest, errors.New("unexpected body in request"))
-		return
-	}
 	bearer, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err)
@@ -75,6 +67,9 @@ func (cfg *Config) revokeRefreshToken(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
-	cfg.db.RevokeRefreshToken(r.Context(), refreshToken.Token)
-	respondWithJSON(w, http.StatusNoContent, struct{}{})
+	if err := cfg.db.RevokeRefreshToken(r.Context(), refreshToken.Token); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
