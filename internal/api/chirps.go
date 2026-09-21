@@ -77,6 +77,47 @@ func (cfg *Config) getChirps(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 200, resp)
 }
 
+func (cfg *Config) deleteChirp(w http.ResponseWriter, r *http.Request) {
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err)
+		return
+	}
+	userUUID, err := auth.JWTToUserUUID(bearer, cfg.secretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, err)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if chirp.UserID != userUUID {
+		respondWithError(w, http.StatusForbidden, errors.New("user is not the author of this chirp"))
+		return
+	}
+
+	if err := cfg.db.DeleteChirp(r.Context(), chirpID); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func validateChirp(initial string) (string, error) {
 
 	if len(initial) > 140 {

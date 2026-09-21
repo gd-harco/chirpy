@@ -16,6 +16,7 @@ func NewMux(cfg *Config) http.Handler {
 	mux.HandleFunc("POST /api/chirps", cfg.createChirps)
 	mux.HandleFunc("GET /api/chirps", cfg.getChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.getChirps)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.deleteChirp)
 
 	mux.HandleFunc("POST /api/users", cfg.createUser)
 	mux.HandleFunc("PUT /api/users", cfg.updateUser)
