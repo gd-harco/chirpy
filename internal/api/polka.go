@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gd-harco/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -17,11 +18,21 @@ type polkaWebhookRequest struct {
 }
 
 func (cfg *Config) polkaWebhook(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err)
+		return
+	}
+	if apiKey != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, errors.New("invalid API key"))
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	req := polkaWebhookRequest{}
-	err := decoder.Decode(&req)
+	err = decoder.Decode(&req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err)
+		respondWithError(w, http.StatusBadRequest, err)
 		return
 	}
 

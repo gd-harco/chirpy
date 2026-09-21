@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cfg := api.NewConfig(database.New(db), os.Getenv("PLATFORM"), os.Getenv("SECRET_KEY"))
+	cfg := api.NewConfig(database.New(db), os.Getenv("PLATFORM"), os.Getenv("SECRET_KEY"), os.Getenv("POLKA_KEY"))
 
 	serv := http.Server{
 		Addr:    ":8080",

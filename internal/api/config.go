@@ -12,13 +12,15 @@ type Config struct {
 	db             *database.Queries
 	platform       string
 	secretKey      string
+	polkaKey       string
 }
 
 // NewConfig builds a Config ready to be used to construct the server mux.
-func NewConfig(db *database.Queries, platform string, secretKey string) *Config {
+func NewConfig(db *database.Queries, platform string, secretKey string, polkaKey string) *Config {
 	return &Config{
 		db:        db,
 		platform:  platform,
 		secretKey: secretKey,
+		polkaKey:  polkaKey,
 	}
 }
