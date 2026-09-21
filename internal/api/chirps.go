@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/gd-harco/chirpy/internal/auth"
@@ -69,6 +70,21 @@ func (cfg *Config) getChirps(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, 500, err)
 			return
 		}
+	order := r.URL.Query().Get("sort")
+	switch order {
+	case "":
+	case "asc":
+		slices.SortFunc(resp, func(a, b database.Chirp) int {
+			return a.CreatedAt.Compare(b.CreatedAt)
+		})
+	case "desc":
+		slices.SortFunc(resp, func(a, b database.Chirp) int {
+			return b.CreatedAt.Compare(a.CreatedAt)
+		})
+	default:
+		respondWithError(w, http.StatusBadRequest, errors.New("invalid query parm \"sort\""))
+		return
+	}
 	respondWithJSON(w, 200, resp)
 }
 
