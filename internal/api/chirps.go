@@ -18,7 +18,7 @@ func (cfg *Config) createChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, err)
 		return
 	}
-	userUUID, err := auth.ValidateJWT(bearer, cfg.secretKey)
+	userUUID, err := auth.JWTToUserUUID(bearer, cfg.secretKey)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, err)
 		return

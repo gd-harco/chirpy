@@ -28,7 +28,7 @@ func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 	return res, nil
 }
 
-func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
+func JWTToUserUUID(tokenString, tokenSecret string) (uuid.UUID, error) {
 	claims := jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (any, error) {
 		return []byte(tokenSecret), nil

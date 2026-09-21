@@ -17,7 +17,7 @@ func TestMakeAndValidateJWT(t *testing.T) {
 		t.Fatalf("MakeJWT() error = %v", err)
 	}
 
-	gotUserID, err := ValidateJWT(tokenString, secret)
+	gotUserID, err := ExtractUserUUIDFromJWT(tokenString, secret)
 	if err != nil {
 		t.Fatalf("ValidateJWT() error = %v", err)
 	}
@@ -36,7 +36,7 @@ func TestValidateJWTRejectsExpiredToken(t *testing.T) {
 		t.Fatalf("MakeJWT() error = %v", err)
 	}
 
-	_, err = ValidateJWT(tokenString, secret)
+	_, err = ExtractUserUUIDFromJWT(tokenString, secret)
 	if err == nil {
 		t.Fatal("ValidateJWT() error = nil, want expired token error")
 	}
@@ -49,7 +49,7 @@ func TestValidateJWTRejectsWrongSecret(t *testing.T) {
 		t.Fatalf("MakeJWT() error = %v", err)
 	}
 
-	_, err = ValidateJWT(tokenString, "wrong-secret")
+	_, err = ExtractUserUUIDFromJWT(tokenString, "wrong-secret")
 	if err == nil {
 		t.Fatal("ValidateJWT() error = nil, want signature error")
 	}

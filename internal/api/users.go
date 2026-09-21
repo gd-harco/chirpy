@@ -21,6 +21,11 @@ type userResponse struct {
 	RefreshToken string    `json:"refresh_token"`
 }
 
+type userDesc struct {
+	Password string `json:"password"`
+	Email    string `json:"email"`
+}
+
 func newUserResponse(u database.User) userResponse {
 	return userResponse{
 		Id:           u.ID,
@@ -33,10 +38,6 @@ func newUserResponse(u database.User) userResponse {
 }
 
 func (cfg *Config) createUser(w http.ResponseWriter, r *http.Request) {
-	type userDesc struct {
-		Password string `json:"password"`
-		Email    string `json:"email"`
-	}
 	decoder := json.NewDecoder(r.Body)
 	user := userDesc{}
 	err := decoder.Decode(&user)
@@ -56,6 +57,38 @@ func (cfg *Config) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 	responseUser := newUserResponse(createdUser)
 	respondWithJSON(w, http.StatusCreated, responseUser)
+}
+
+func (cfg *Config) updateUser(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	userID, err := auth.JWTToUserUUID(token, cfg.secretKey)
+	if err != nil{
+		respondWithError(w, http.StatusUnauthorized, errors.New(""))
+		return
+	}
+	decoder := json.NewDecoder(r.Body)
+	userInfo := userDesc{}
+	err = decoder.Decode(&userInfo)
+	if err != nil {
+		respondWithError(w, 500, err)
+		return
+	}
+	hash, err := auth.HashPassword(userInfo.Password)
+	if err != nil {
+		respondWithError(w, 500, err)
+		return
+	}
+	data := database.UpdateUserParams{
+		ID: userID,
+		Email: userInfo.Email,
+		HashedPassword: hash,
+	}
+	updatedUser, err := cfg.db.UpdateUser(r.Context(), data)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err)
+		return
+	}
+	respondWithJSON(w, http.StatusOK, updatedUser)
 }
 
 func (cfg *Config) login(w http.ResponseWriter, r *http.Request) {
