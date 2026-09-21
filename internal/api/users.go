@@ -19,6 +19,7 @@ type userResponse struct {
 	Email        string    `json:"email"`
 	Token        string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
+	IsChirpyRed  bool      `json:"is_chirpy_red"`
 }
 
 type userDesc struct {
@@ -34,6 +35,7 @@ func newUserResponse(u database.User) userResponse {
 		Email:        u.Email,
 		Token:        "",
 		RefreshToken: "",
+		IsChirpyRed:  u.IsChirpyRed,
 	}
 }
 
@@ -88,7 +90,7 @@ func (cfg *Config) updateUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondWithJSON(w, http.StatusOK, updatedUser)
+	respondWithJSON(w, http.StatusOK, newUserResponse(updatedUser))
 }
 
 func (cfg *Config) login(w http.ResponseWriter, r *http.Request) {

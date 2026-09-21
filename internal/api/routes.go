@@ -24,5 +24,7 @@ func NewMux(cfg *Config) http.Handler {
 
 	mux.HandleFunc("POST /api/refresh", cfg.refreshJWT)
 	mux.HandleFunc("POST /api/revoke", cfg.revokeRefreshToken)
+
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.polkaWebhook)
 	return mux
 }
