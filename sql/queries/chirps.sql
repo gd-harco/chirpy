@@ -14,6 +14,7 @@ FROM chirps;
 -- name: GetAllChirps :many
 SELECT *
 from chirps
+WHERE (sqlc.narg('user_id')::uuid IS NULL OR user_id = sqlc.narg('user_id'))
 order by created_at;
 
 -- name: GetChirp :one

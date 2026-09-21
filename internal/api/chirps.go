@@ -45,20 +45,35 @@ func (cfg *Config) createChirps(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, createdChirp)
 
 }
-
 func (cfg *Config) getChirps(w http.ResponseWriter, r *http.Request) {
-	target := r.PathValue("chirpID")
-
-	if target == "" {
-		resp, err := cfg.db.GetAllChirps(r.Context())
+	var userId uuid.NullUUID
+	userIdString := r.URL.Query().Get("author_id")
+	if userIdString == "" {
+		userId = uuid.NullUUID{
+			UUID: uuid.UUID{},
+			Valid: false,
+		}
+	} else {
+		parsedID, err := uuid.Parse(userIdString)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, err)
+			return
+		}
+		userId = uuid.NullUUID{
+			UUID:  parsedID,
+			Valid: true,
+		}
+	}
+	resp, err := cfg.db.GetAllChirps(r.Context(), userId)
 		if err != nil {
 			respondWithError(w, 500, err)
 			return
 		}
-		respondWithJSON(w, 200, resp)
-		return
-	}
+	respondWithJSON(w, 200, resp)
+}
 
+func (cfg *Config) getChirp(w http.ResponseWriter, r *http.Request) {
+	target := r.PathValue("chirpID")
 	id, err := uuid.Parse(target)
 	if err != nil {
 		respondWithError(w, 400, err)

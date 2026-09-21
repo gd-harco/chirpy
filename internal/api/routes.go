@@ -13,9 +13,9 @@ func NewMux(cfg *Config) http.Handler {
 	mux.HandleFunc("GET /admin/metrics", cfg.getHitCount)
 	mux.HandleFunc("POST /admin/reset", cfg.resetAPI)
 
-	mux.HandleFunc("POST /api/chirps", cfg.createChirps)
 	mux.HandleFunc("GET /api/chirps", cfg.getChirps)
-	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.getChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.getChirp)
+	mux.HandleFunc("POST /api/chirps", cfg.createChirps)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.deleteChirp)
 
 	mux.HandleFunc("POST /api/users", cfg.createUser)
